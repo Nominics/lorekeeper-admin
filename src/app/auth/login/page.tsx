@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle, Database, CheckCircle2, XCircle } from 'lucide-react';
+import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,14 +17,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [networkError, setNetworkError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ status: 'idle' | 'loading' | 'success' | 'error', message: string }>({ status: 'idle', message: '' });
   
   const router = useRouter();
   const { toast } = useToast();
-
-  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'Missing';
-  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'Missing';
-  const keyPreview = envKey !== 'Missing' ? `${envKey.substring(0, 8)}...` : 'Missing';
 
   useEffect(() => {
     const checkUser = async () => {
@@ -42,23 +37,6 @@ export default function LoginPage() {
     };
     checkUser();
   }, [router]);
-
-  const handleConnectionTest = async () => {
-    setTestResult({ status: 'loading', message: 'Probing archive nodes...' });
-    
-    try {
-      // Run a simple query to test connection
-      const { error } = await supabase.from("cards").select("id").limit(1);
-      
-      if (error) {
-        setTestResult({ status: 'error', message: `Database error: ${error.message}` });
-      } else {
-        setTestResult({ status: 'success', message: 'Connection established successfully.' });
-      }
-    } catch (err: any) {
-      setTestResult({ status: 'error', message: `Network exception: ${err.message}` });
-    }
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +62,7 @@ export default function LoginPage() {
       console.error('Login error:', error);
       const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
       const errorMessage = isNetworkError 
-        ? "Network Error: Could not connect to the authentication server."
+        ? "Network Error: Could not connect to the authentication server. Please verify your connection and environment settings."
         : error.message || "Invalid credentials provided.";
 
       toast({
@@ -191,56 +169,6 @@ export default function LoginPage() {
               </div>
             </CardFooter>
           </form>
-        </Card>
-
-        {/* Temporary Diagnostic Section */}
-        <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
-          <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
-            <CardTitle className="text-xs font-headline uppercase tracking-[0.2em] text-primary">System Diagnostics</CardTitle>
-            <Database className="w-3 h-3 text-primary opacity-50" />
-          </CardHeader>
-          <CardContent className="py-0 px-4 space-y-3 pb-4">
-            <div className="grid grid-cols-1 gap-2 text-[10px] font-mono">
-              <div className="flex flex-col gap-1 p-2 rounded bg-background/50 border border-border/50">
-                <span className="text-muted-foreground uppercase">Archive URL</span>
-                <span className="truncate text-foreground font-bold">{envUrl}</span>
-              </div>
-              <div className="flex flex-col gap-1 p-2 rounded bg-background/50 border border-border/50">
-                <span className="text-muted-foreground uppercase">Key Probe (Partial)</span>
-                <span className="text-foreground font-bold">{keyPreview}</span>
-              </div>
-            </div>
-
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full text-[10px] font-headline uppercase tracking-widest h-8 border-primary/30 hover:bg-primary/10"
-              onClick={handleConnectionTest}
-              disabled={testResult.status === 'loading'}
-            >
-              {testResult.status === 'loading' ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-2" />
-              ) : (
-                <Database className="w-3 h-3 mr-2" />
-              )}
-              Test Database Connection
-            </Button>
-
-            {testResult.status !== 'idle' && (
-              <div className={`flex items-start gap-2 p-3 rounded text-[10px] font-body italic ${
-                testResult.status === 'success' 
-                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                  : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-              }`}>
-                {testResult.status === 'success' ? (
-                  <CheckCircle2 className="w-3 h-3 shrink-0" />
-                ) : (
-                  <XCircle className="w-3 h-3 shrink-0" />
-                )}
-                <span className="leading-tight">{testResult.message}</span>
-              </div>
-            )}
-          </CardContent>
         </Card>
       </div>
     </div>
