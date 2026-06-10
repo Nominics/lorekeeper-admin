@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, BookOpen, KeyRound } from 'lucide-react';
+import { ShieldCheck, BookOpen, KeyRound, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +32,10 @@ export default function LoginPage() {
       }
 
       if (data?.user) {
+        toast({
+          title: "Access Granted",
+          description: "Welcome back to the digital archive.",
+        });
         router.push('/admin/dashboard');
       }
     } catch (error: any) {
@@ -102,7 +106,14 @@ export default function LoginPage() {
               className="w-full h-11 font-headline tracking-wide text-primary-foreground font-bold hover:opacity-90 transition-opacity" 
               disabled={isLoading}
             >
-              {isLoading ? "Authenticating..." : "Initiate Access"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Authenticating...
+                </>
+              ) : (
+                "Initiate Access"
+              )}
             </Button>
             <div className="text-center">
                <span className="text-xs text-muted-foreground font-body italic flex items-center justify-center gap-2">

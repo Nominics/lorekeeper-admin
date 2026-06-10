@@ -2,14 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Supabase client configuration using environment variables.
- * These must be defined in the project's .env files.
- * Fallback values are provided to prevent runtime crashes during initial setup.
+ * Fallback values provided by the user to ensure the application 
+ * initializes correctly in the current environment.
  */
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  console.warn('Supabase environment variables are missing. Authentication features will not work until NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are configured.');
-}
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pqtfuvyenvwkegzchwyd.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdGZ1dnllbnd2a2VnemNod3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTYyNjQsImV4cCI6MjA5NjY3MjI2NH0._hAuT5jwWNrQNr9f-9lno5zE44ud0lszEEa7A1cWU78';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
