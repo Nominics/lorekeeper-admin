@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle, Database } from 'lucide-react';
+import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle, Database, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -22,6 +22,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'Missing';
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'Missing';
+  const keyPreview = envKey !== 'Missing' ? `${envKey.substring(0, 8)}...` : 'Missing';
+
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -34,37 +38,25 @@ export default function LoginPage() {
       } catch (err: any) {
         console.error('Initial session check failed:', err);
         setIsVerifying(false);
-        if (err.message === 'Failed to fetch') {
-          setNetworkError("The digital archive is unreachable. Please check your network connection or ensure the Supabase URL is correct.");
-        }
       }
     };
     checkUser();
   }, [router]);
 
   const handleConnectionTest = async () => {
-    setTestResult({ status: 'loading', message: 'Initiating archive probe...' });
+    setTestResult({ status: 'loading', message: 'Probing archive nodes...' });
     
-    // 1. Log URL
-    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pqtfuvyenvwkegzchwyd.supabase.co').trim();
-    console.log('Diagnostic - Supabase URL:', url);
-    
-    // 2. Log if Anon Key exists (masked)
-    const rawKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdGZ1dnllbnd2a2VnemNod3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTYyNjQsImV4cCI6MjA5NjY3MjI2NH0._hAuT5jwWNrQNr9f-9lno5zE44ud0lszEEa7A1cWU78').trim();
-    const hasKey = !!rawKey && rawKey !== 'YOUR_ANON_KEY';
-    console.log('Diagnostic - Supabase Anon Key detected:', hasKey);
-
     try {
-      // 3. Run query
-      const { data, error } = await supabase.from("cards").select("id").limit(1);
+      // Run a simple query to test connection
+      const { error } = await supabase.from("cards").select("id").limit(1);
       
       if (error) {
-        setTestResult({ status: 'error', message: `Query failed: ${error.message}` });
+        setTestResult({ status: 'error', message: `Database error: ${error.message}` });
       } else {
-        setTestResult({ status: 'success', message: 'Connectivity confirmed. Response received from archive.' });
+        setTestResult({ status: 'success', message: 'Connection established successfully.' });
       }
     } catch (err: any) {
-      setTestResult({ status: 'error', message: `Fetch exception: ${err.message}` });
+      setTestResult({ status: 'error', message: `Network exception: ${err.message}` });
     }
   };
 
@@ -79,9 +71,7 @@ export default function LoginPage() {
         password,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (data?.user) {
         toast({
@@ -92,11 +82,10 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      
       const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
       const errorMessage = isNetworkError 
-        ? "Network Error: Could not connect to the authentication server. This may be due to a blocked URL or a restricted environment."
-        : error.message || "Invalid credentials provided for the digital archive.";
+        ? "Network Error: Could not connect to the authentication server."
+        : error.message || "Invalid credentials provided.";
 
       toast({
         variant: "destructive",
@@ -104,9 +93,7 @@ export default function LoginPage() {
         description: errorMessage,
       });
 
-      if (isNetworkError) {
-        setNetworkError(errorMessage);
-      }
+      if (isNetworkError) setNetworkError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +108,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 relative overflow-hidden space-y-6">
       {/* Decorative patterns */}
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] opacity-20"></div>
@@ -197,33 +184,63 @@ export default function LoginPage() {
                   "Initiate Access"
                 )}
               </Button>
-              
-              <div className="w-full border-t border-border/40 pt-4 mt-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  className="w-full text-[10px] font-headline uppercase tracking-widest h-8"
-                  onClick={handleConnectionTest}
-                  disabled={testResult.status === 'loading'}
-                >
-                  <Database className="w-3 h-3 mr-2" />
-                  {testResult.status === 'loading' ? 'Probing...' : 'Run Diagnostics'}
-                </Button>
-                {testResult.message && (
-                  <p className={`text-[10px] mt-2 text-center font-body italic ${testResult.status === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {testResult.message}
-                  </p>
-                )}
-              </div>
-
               <div className="text-center">
                  <span className="text-xs text-muted-foreground font-body italic flex items-center justify-center gap-2">
-                  <ShieldCheck className="w-3 h-3" /> Secure digital session via Supabase Auth
+                  <ShieldCheck className="w-3 h-3" /> Secure session via Supabase
                 </span>
               </div>
             </CardFooter>
           </form>
+        </Card>
+
+        {/* Temporary Diagnostic Section */}
+        <Card className="border-primary/20 bg-primary/5 backdrop-blur-sm">
+          <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+            <CardTitle className="text-xs font-headline uppercase tracking-[0.2em] text-primary">System Diagnostics</CardTitle>
+            <Database className="w-3 h-3 text-primary opacity-50" />
+          </CardHeader>
+          <CardContent className="py-0 px-4 space-y-3 pb-4">
+            <div className="grid grid-cols-1 gap-2 text-[10px] font-mono">
+              <div className="flex flex-col gap-1 p-2 rounded bg-background/50 border border-border/50">
+                <span className="text-muted-foreground uppercase">Archive URL</span>
+                <span className="truncate text-foreground font-bold">{envUrl}</span>
+              </div>
+              <div className="flex flex-col gap-1 p-2 rounded bg-background/50 border border-border/50">
+                <span className="text-muted-foreground uppercase">Key Probe (Partial)</span>
+                <span className="text-foreground font-bold">{keyPreview}</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-[10px] font-headline uppercase tracking-widest h-8 border-primary/30 hover:bg-primary/10"
+              onClick={handleConnectionTest}
+              disabled={testResult.status === 'loading'}
+            >
+              {testResult.status === 'loading' ? (
+                <Loader2 className="w-3 h-3 animate-spin mr-2" />
+              ) : (
+                <Database className="w-3 h-3 mr-2" />
+              )}
+              Test Database Connection
+            </Button>
+
+            {testResult.status !== 'idle' && (
+              <div className={`flex items-start gap-2 p-3 rounded text-[10px] font-body italic ${
+                testResult.status === 'success' 
+                  ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                  : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+              }`}>
+                {testResult.status === 'success' ? (
+                  <CheckCircle2 className="w-3 h-3 shrink-0" />
+                ) : (
+                  <XCircle className="w-3 h-3 shrink-0" />
+                )}
+                <span className="leading-tight">{testResult.message}</span>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>
