@@ -28,7 +28,7 @@ import {
   useSidebar
 } from "@/components/ui/sidebar";
 import { useRouter, usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { Separator } from "@/components/ui/separator";
 
 const menuItems = [

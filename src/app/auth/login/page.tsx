@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, BookOpen, KeyRound } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Direct Supabase interaction as requested
+      // Direct Supabase interaction
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
