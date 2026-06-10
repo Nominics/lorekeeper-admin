@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle } from 'lucide-react';
+import { ShieldCheck, BookOpen, KeyRound, Loader2, AlertCircle, Database } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,6 +17,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ status: 'idle' | 'loading' | 'success' | 'error', message: string }>({ status: 'idle', message: '' });
+  
   const router = useRouter();
   const { toast } = useToast();
 
@@ -39,6 +41,32 @@ export default function LoginPage() {
     };
     checkUser();
   }, [router]);
+
+  const handleConnectionTest = async () => {
+    setTestResult({ status: 'loading', message: 'Initiating archive probe...' });
+    
+    // 1. Log URL
+    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pqtfuvyenvwkegzchwyd.supabase.co').trim();
+    console.log('Diagnostic - Supabase URL:', url);
+    
+    // 2. Log if Anon Key exists (masked)
+    const rawKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxdGZ1dnllbnd2a2VnemNod3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTYyNjQsImV4cCI6MjA5NjY3MjI2NH0._hAuT5jwWNrQNr9f-9lno5zE44ud0lszEEa7A1cWU78').trim();
+    const hasKey = !!rawKey && rawKey !== 'YOUR_ANON_KEY';
+    console.log('Diagnostic - Supabase Anon Key detected:', hasKey);
+
+    try {
+      // 3. Run query
+      const { data, error } = await supabase.from("cards").select("id").limit(1);
+      
+      if (error) {
+        setTestResult({ status: 'error', message: `Query failed: ${error.message}` });
+      } else {
+        setTestResult({ status: 'success', message: 'Connectivity confirmed. Response received from archive.' });
+      }
+    } catch (err: any) {
+      setTestResult({ status: 'error', message: `Fetch exception: ${err.message}` });
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +197,26 @@ export default function LoginPage() {
                   "Initiate Access"
                 )}
               </Button>
+              
+              <div className="w-full border-t border-border/40 pt-4 mt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  className="w-full text-[10px] font-headline uppercase tracking-widest h-8"
+                  onClick={handleConnectionTest}
+                  disabled={testResult.status === 'loading'}
+                >
+                  <Database className="w-3 h-3 mr-2" />
+                  {testResult.status === 'loading' ? 'Probing...' : 'Run Diagnostics'}
+                </Button>
+                {testResult.message && (
+                  <p className={`text-[10px] mt-2 text-center font-body italic ${testResult.status === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {testResult.message}
+                  </p>
+                )}
+              </div>
+
               <div className="text-center">
                  <span className="text-xs text-muted-foreground font-body italic flex items-center justify-center gap-2">
                   <ShieldCheck className="w-3 h-3" /> Secure digital session via Supabase Auth
