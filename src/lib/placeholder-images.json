@@ -1,3 +1,16 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "archive-hero",
+      "description": "Abstract golden library",
+      "imageUrl": "https://picsum.photos/seed/lore1/1200/800",
+      "imageHint": "golden library"
+    },
+    {
+      "id": "protagonist-portrait",
+      "description": "Abstract character silhouette",
+      "imageUrl": "https://picsum.photos/seed/lore2/400/600",
+      "imageHint": "shadowy figure"
+    }
+  ]
 }
