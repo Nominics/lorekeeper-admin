@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -23,22 +22,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Direct Supabase interaction
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        // Since this is a demo/starter, we'll allow bypassing if keys are placeholders
-        if (email === 'admin@lorekeeper.com' && password === 'lorekeeper') {
-          router.push('/admin/dashboard');
-          return;
-        }
         throw error;
       }
 
-      router.push('/admin/dashboard');
+      if (data?.user) {
+        router.push('/admin/dashboard');
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -111,7 +106,7 @@ export default function LoginPage() {
             </Button>
             <div className="text-center">
                <span className="text-xs text-muted-foreground font-body italic flex items-center justify-center gap-2">
-                <ShieldCheck className="w-3 h-3" /> Secure digital session via Supabase JS
+                <ShieldCheck className="w-3 h-3" /> Secure digital session via Supabase Auth
               </span>
             </div>
           </CardFooter>
