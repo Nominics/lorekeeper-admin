@@ -36,7 +36,7 @@ import { AdminRole } from "@/hooks/useRole";
 const menuItems = [
   { title: "Dashboard", icon: Home, url: "/admin/dashboard" },
   { title: "Registry", icon: ScrollText, url: "/admin/cards" },
-  { title: "Chronicles", icon: Calendar, url: "/admin/chronicles" },
+  { title: "Chronicles", icon: Calendar, url: "/admin/events" },
   { title: "Protagonists", icon: Users, url: "/admin/protagonists" },
   { title: "Relics", icon: Sword, url: "/admin/relics" },
 ];
@@ -99,14 +99,14 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    isActive={pathname === item.url}
+                    isActive={pathname === item.url || pathname.startsWith(item.url + '/')}
                     tooltip={item.title}
                     className="hover:bg-primary/5 transition-all group"
                   >
                     <a href={item.url} className="flex items-center gap-3 py-6">
-                      <item.icon className={`w-5 h-5 ${pathname === item.url ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} strokeWidth={1.5} />
+                      <item.icon className={`w-5 h-5 ${pathname.startsWith(item.url) ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} strokeWidth={1.5} />
                       <span className="font-body text-sm">{item.title}</span>
-                      {pathname === item.url && <ChevronRight className="ml-auto w-3 h-3 text-primary" />}
+                      {pathname.startsWith(item.url) && <ChevronRight className="ml-auto w-3 h-3 text-primary" />}
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
