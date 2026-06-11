@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +13,10 @@ import {
   Database, 
   Info,
   Sparkles,
-  Zap
+  Zap,
+  Upload,
+  Image as ImageIcon,
+  CheckCircle2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -88,7 +91,9 @@ interface ArchivalError {
 export function CardForm({ initialData, isEdit }: CardFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<ArchivalError | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
@@ -114,18 +119,65 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
   });
 
   const selectedRarity = form.watch('rarity');
+  const cardId = form.watch('id');
+  const currentImageUrl = form.watch('image_url');
 
   // Auto-fill logic based on rarity
   useEffect(() => {
-    if (selectedRarity && RARITY_PRESETS[selectedRarity]) {
+    if (selectedRarity && RARITY_PRESETS[selectedRarity] && !isEdit) {
       const preset = RARITY_PRESETS[selectedRarity];
-      const currentPower = form.getValues('base_power');
-      const currentHolo = form.getValues('holo_chance');
-      
       form.setValue('base_power', preset.power);
       form.setValue('holo_chance', preset.holo);
     }
-  }, [selectedRarity, form]);
+  }, [selectedRarity, form, isEdit]);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!cardId) {
+      setError({ message: "Archive ID is required before uploading artwork." });
+      return;
+    }
+
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError({ message: "Unsupported format. Use PNG, JPG, or WEBP." });
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `cards/${cardId}/normal.${fileExt}`;
+      
+      const { error: uploadError, data } = await supabase.storage
+        .from('card-art')
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('card-art')
+        .getPublicUrl(fileName);
+
+      form.setValue('image_url', publicUrl);
+    } catch (err: any) {
+      console.error('Upload failed:', err);
+      setError({
+        message: err.message || 'The archive rejected the artwork transmission.',
+        code: err.code
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   async function onSubmit(data: CardFormValues) {
     setIsSubmitting(true);
@@ -237,7 +289,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Class</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="bg-background/50">
                               <SelectValue placeholder="Select Class" />
@@ -257,7 +309,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Rarity Rank</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="bg-background/50">
                               <SelectValue placeholder="Select Rarity" />
@@ -277,7 +329,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Origin Atoll</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="bg-background/50">
                               <SelectValue placeholder="Select Atoll" />
@@ -336,69 +388,84 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
             <Card className="border-border/60 bg-card/30">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-primary" />
-                  Combat & Visual Parameters
+                  <ImageIcon className="w-5 h-5 text-primary" />
+                  Visual Archiving
                 </CardTitle>
+                <CardDescription className="font-body text-xs">Transmit visual data to the digital vault.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="base_power"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Base Combat Power</FormLabel>
-                        <FormControl>
-                          <Input type="number" {...field} className="bg-background/50 font-mono" />
-                        </FormControl>
-                        <FormDescription className="text-[10px] italic">Calibrated to rarity by default.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="holo_chance"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holographic Probability (0-1)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} className="bg-background/50 font-mono" />
-                        </FormControl>
-                        <FormDescription className="text-[10px] italic">Archive sync chance for prismatic variations.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <CardContent className="space-y-8">
+                <div className="space-y-4">
+                  <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Normal Artwork</FormLabel>
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="relative w-full md:w-48 aspect-[3/4] bg-background/50 rounded-lg border border-border/40 flex items-center justify-center overflow-hidden group">
+                      {currentImageUrl ? (
+                        <img src={currentImageUrl} alt="Card Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
+                          <ImageIcon className="w-8 h-8" />
+                          <span className="text-[10px] font-headline uppercase tracking-tighter">No Image</span>
+                        </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          <span className="text-[10px] font-headline uppercase tracking-widest animate-pulse">Uploading</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-4 w-full">
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          disabled={isUploading || !cardId}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full md:w-auto font-headline text-[10px] uppercase tracking-[0.2em] border-primary/20 hover:bg-primary/10 h-10"
+                        >
+                          {isUploading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
+                          {currentImageUrl ? "Update Artwork" : "Select Artwork"}
+                        </Button>
+                        {!cardId && <p className="text-[10px] text-rose-500 font-body italic flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Initialize Archive ID first</p>}
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          className="hidden" 
+                          accept="image/png,image/jpeg,image/webp" 
+                          onChange={handleImageUpload}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="image_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Manual URL Fallback</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://..." {...field} className="bg-background/50 font-mono text-[10px]" />
+                            </FormControl>
+                            <FormDescription className="text-[9px] italic">Archive storage links are automatically synced here.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Standard Image URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} className="bg-background/50" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="holo_image_url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holographic Variant URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://..." {...field} className="bg-background/50" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+
+                <FormField
+                  control={form.control}
+                  name="holo_image_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holographic Variant URL</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} className="bg-background/50 font-mono text-[10px]" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </div>
@@ -407,8 +474,47 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
             <Card className="border-border/60 bg-card/30">
               <CardHeader>
                 <CardTitle className="font-headline text-lg flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-primary" />
+                  Combat Calibration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="base_power"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Base Combat Power</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} className="bg-background/50 font-mono" />
+                      </FormControl>
+                      <FormDescription className="text-[10px] italic">Calibrated to rarity by default.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="holo_chance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holo Probability (0-1)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} className="bg-background/50 font-mono" />
+                      </FormControl>
+                      <FormDescription className="text-[10px] italic">Archive sync chance for prismatic variations.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60 bg-card/30">
+              <CardHeader>
+                <CardTitle className="font-headline text-lg flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  Meta Metadata
+                  Archival Meta
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -451,7 +557,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Discovery Source</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-background/50">
                             <SelectValue placeholder="Select Source" />
@@ -468,12 +574,12 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="admin_notes"
+                  name="artist_note"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Admin Notes</FormLabel>
+                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Artist Attribution</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Internal archival notes..." {...field} className="bg-background/50 text-xs" />
+                        <Input placeholder="Attribution..." {...field} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -482,12 +588,12 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
 
                 <FormField
                   control={form.control}
-                  name="artist_note"
+                  name="admin_notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Artist Credit / Note</FormLabel>
+                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Internal Admin Notes</FormLabel>
                       <FormControl>
-                        <Input placeholder="Attribution..." {...field} className="bg-background/50" />
+                        <Textarea placeholder="Internal archival notes..." {...field} className="bg-background/50 text-xs" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -497,7 +603,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
             </Card>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" disabled={isSubmitting} className="w-full font-headline font-bold uppercase tracking-widest py-6">
+              <Button type="submit" disabled={isSubmitting || isUploading} className="w-full font-headline font-bold uppercase tracking-widest py-6">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
