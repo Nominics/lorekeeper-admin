@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -30,6 +29,8 @@ import {
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { AdminRole } from "@/hooks/useRole";
 
 const menuItems = [
   { title: "Dashboard", icon: Home, url: "/admin/dashboard" },
@@ -44,7 +45,11 @@ const metaItems = [
   { title: "Settings", icon: Settings, url: "/admin/settings" },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  role: AdminRole;
+}
+
+export function AdminSidebar({ role }: AdminSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { state } = useSidebar();
@@ -52,6 +57,19 @@ export function AdminSidebar() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/auth/login");
+  };
+
+  const getRoleBadge = (role: AdminRole) => {
+    switch (role) {
+      case 'superadmin':
+        return <Badge variant="default" className="bg-primary text-primary-foreground font-headline text-[10px] px-1.5 py-0">SUPERADMIN</Badge>;
+      case 'admin':
+        return <Badge variant="outline" className="border-primary/50 text-primary font-headline text-[10px] px-1.5 py-0">ADMIN</Badge>;
+      case 'moderator':
+        return <Badge variant="secondary" className="font-headline text-[10px] px-1.5 py-0">MODERATOR</Badge>;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -120,7 +138,13 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 gap-4">
+        {state !== 'collapsed' && (
+          <div className="px-2 mb-2">
+            <p className="text-[10px] font-headline uppercase tracking-widest text-muted-foreground mb-1.5">Clearance Level</p>
+            {getRoleBadge(role)}
+          </div>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton 
