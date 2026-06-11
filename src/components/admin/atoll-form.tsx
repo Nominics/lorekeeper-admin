@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -13,7 +12,7 @@ import {
   AlertCircle, 
   Map as MapIcon,
   Layers,
-  CheckCircle2
+  Database
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -34,9 +33,11 @@ import { supabase } from '@/lib/supabase/client';
 
 const atollSchema = z.object({
   code: z.string().min(1, "Atoll code is required (e.g., HA)"),
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  admin_name: z.string().min(2, "Administrative name must be at least 2 characters"),
+  traditional_name: z.string().optional(),
+  registration_card_id: z.string().optional(),
   display_order: z.coerce.number().min(0),
-  is_active: z.boolean().default(true),
+  enabled: z.boolean().default(true),
 });
 
 type AtollFormValues = z.infer<typeof atollSchema>;
@@ -55,9 +56,11 @@ export function AtollForm({ initialData, isEdit }: AtollFormProps) {
     resolver: zodResolver(atollSchema),
     defaultValues: {
       code: '',
-      name: '',
+      admin_name: '',
+      traditional_name: '',
+      registration_card_id: '',
       display_order: 0,
-      is_active: true,
+      enabled: true,
       ...initialData,
     },
   });
@@ -111,7 +114,7 @@ export function AtollForm({ initialData, isEdit }: AtollFormProps) {
               <MapIcon className="w-5 h-5 text-primary" />
               Atoll Identity
             </CardTitle>
-            <CardDescription className="font-body text-xs">Define the code and common name for this geographical node.</CardDescription>
+            <CardDescription className="font-body text-xs">Define the codes and names for this geographical node.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -124,21 +127,52 @@ export function AtollForm({ initialData, isEdit }: AtollFormProps) {
                     <FormControl>
                       <Input placeholder="E.g. HA" {...field} className="bg-background/50 font-mono font-bold" />
                     </FormControl>
-                    <FormDescription className="text-[9px]">Standard registry code.</FormDescription>
+                    <FormDescription className="text-[9px]">Standard registry code (Unique).</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="name"
+                name="admin_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Full Name</FormLabel>
+                    <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Administrative Name</FormLabel>
                     <FormControl>
                       <Input placeholder="E.g. Haa Alif" {...field} className="bg-background/50" />
                     </FormControl>
                     <FormDescription className="text-[9px]">The formal archival name.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="traditional_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Traditional Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="E.g. Thiladhunmathi Uthuruburi" {...field} className="bg-background/50" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="registration_card_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                      <Database className="w-3 h-3" /> Registration Card ID
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="LC-XXXX" {...field} className="bg-background/50 font-mono" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -163,10 +197,10 @@ export function AtollForm({ initialData, isEdit }: AtollFormProps) {
               />
               <FormField
                 control={form.control}
-                name="is_active"
+                name="enabled"
                 render={({ field }) => (
                   <FormItem className="flex items-center justify-between rounded-lg border border-border/40 p-4 bg-background/20 mt-2">
-                    <FormLabel className="font-headline text-xs uppercase tracking-wider">Active Status</FormLabel>
+                    <FormLabel className="font-headline text-xs uppercase tracking-wider">Enabled Status</FormLabel>
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>

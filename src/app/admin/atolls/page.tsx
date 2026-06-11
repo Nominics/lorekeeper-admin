@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -30,9 +29,10 @@ import { format } from 'date-fns';
 interface AtollData {
   id: string;
   code: string;
-  name: string;
+  admin_name: string;
+  traditional_name: string;
   display_order: number;
-  is_active: boolean;
+  enabled: boolean;
   created_at: string;
 }
 
@@ -115,7 +115,8 @@ export default function AtollsListPage() {
               <TableRow className="border-border/60 hover:bg-transparent">
                 <TableHead className="w-[50px]"></TableHead>
                 <TableHead className="font-headline uppercase tracking-widest text-[10px]">Code</TableHead>
-                <TableHead className="font-headline uppercase tracking-widest text-[10px]">Name</TableHead>
+                <TableHead className="font-headline uppercase tracking-widest text-[10px]">Admin Name</TableHead>
+                <TableHead className="font-headline uppercase tracking-widest text-[10px]">Traditional</TableHead>
                 <TableHead className="font-headline uppercase tracking-widest text-[10px]">Order</TableHead>
                 <TableHead className="font-headline uppercase tracking-widest text-[10px] text-center">Status</TableHead>
                 <TableHead className="font-headline uppercase tracking-widest text-[10px]">Cataloged At</TableHead>
@@ -129,10 +130,11 @@ export default function AtollsListPage() {
                     <GripVertical className="w-4 h-4 text-muted-foreground/20 group-hover:text-primary/40 transition-colors" />
                   </TableCell>
                   <TableCell className="font-mono text-sm font-bold text-primary">{atoll.code}</TableCell>
-                  <TableCell className="font-headline font-bold text-sm tracking-tight">{atoll.name}</TableCell>
+                  <TableCell className="font-headline font-bold text-sm tracking-tight">{atoll.admin_name}</TableCell>
+                  <TableCell className="font-body text-xs text-muted-foreground">{atoll.traditional_name || '—'}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{atoll.display_order}</TableCell>
                   <TableCell className="text-center">
-                    {atoll.is_active ? (
+                    {atoll.enabled ? (
                       <Badge variant="outline" className="border-emerald-500/50 text-emerald-500 bg-emerald-500/5">
                         <Eye className="w-3 h-3 mr-1" /> Active
                       </Badge>
