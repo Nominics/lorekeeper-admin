@@ -157,7 +157,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `cards/${cardId}/${type}.${fileExt}`;
+      const fileName = `${type}/${cardId}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('card-art')
