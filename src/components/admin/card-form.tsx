@@ -92,8 +92,11 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isHoloUploading, setIsHoloUploading] = useState(false);
   const [error, setError] = useState<ArchivalError | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const holoFileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
@@ -121,6 +124,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
   const selectedRarity = form.watch('rarity');
   const cardId = form.watch('id');
   const currentImageUrl = form.watch('image_url');
+  const currentHoloImageUrl = form.watch('holo_image_url');
 
   // Auto-fill logic based on rarity
   useEffect(() => {
@@ -131,7 +135,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
     }
   }, [selectedRarity, form, isEdit]);
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'normal' | 'holo') {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -146,14 +150,16 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
       return;
     }
 
-    setIsUploading(true);
+    if (type === 'normal') setIsUploading(true);
+    else setIsHoloUploading(true);
+    
     setError(null);
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `cards/${cardId}/normal.${fileExt}`;
+      const fileName = `cards/${cardId}/${type}.${fileExt}`;
       
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('card-art')
         .upload(fileName, file, { 
           upsert: true,
@@ -166,7 +172,9 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
         .from('card-art')
         .getPublicUrl(fileName);
 
-      form.setValue('image_url', publicUrl);
+      if (type === 'normal') form.setValue('image_url', publicUrl);
+      else form.setValue('holo_image_url', publicUrl);
+
     } catch (err: any) {
       console.error('Upload failed:', err);
       setError({
@@ -174,8 +182,13 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
         code: err.code
       });
     } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (type === 'normal') {
+        setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } else {
+        setIsHoloUploading(false);
+        if (holoFileInputRef.current) holoFileInputRef.current.value = '';
+      }
     }
   }
 
@@ -393,11 +406,12 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                 </CardTitle>
                 <CardDescription className="font-body text-xs">Transmit visual data to the digital vault.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8">
+              <CardContent className="space-y-12">
+                {/* Normal Artwork Section */}
                 <div className="space-y-4">
-                  <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Normal Artwork</FormLabel>
+                  <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground block mb-2">Standard Registry Artwork</FormLabel>
                   <div className="flex flex-col md:flex-row gap-6 items-start">
-                    <div className="relative w-full md:w-48 aspect-[3/4] bg-background/50 rounded-lg border border-border/40 flex items-center justify-center overflow-hidden group">
+                    <div className="relative w-full md:w-40 aspect-[3/4] bg-background/50 rounded-lg border border-border/40 flex items-center justify-center overflow-hidden group">
                       {currentImageUrl ? (
                         <img src={currentImageUrl} alt="Card Preview" className="w-full h-full object-cover" />
                       ) : (
@@ -419,12 +433,12 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                         <Button 
                           type="button" 
                           variant="outline" 
-                          disabled={isUploading || !cardId}
+                          disabled={isUploading || isHoloUploading || !cardId}
                           onClick={() => fileInputRef.current?.click()}
                           className="w-full md:w-auto font-headline text-[10px] uppercase tracking-[0.2em] border-primary/20 hover:bg-primary/10 h-10"
                         >
                           {isUploading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Upload className="w-3 h-3 mr-2" />}
-                          {currentImageUrl ? "Update Artwork" : "Select Artwork"}
+                          {currentImageUrl ? "Update Registry Art" : "Select Registry Art"}
                         </Button>
                         {!cardId && <p className="text-[10px] text-rose-500 font-body italic flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Initialize Archive ID first</p>}
                         <input 
@@ -432,7 +446,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                           ref={fileInputRef} 
                           className="hidden" 
                           accept="image/png,image/jpeg,image/webp" 
-                          onChange={handleImageUpload}
+                          onChange={(e) => handleImageUpload(e, 'normal')}
                         />
                       </div>
                       <FormField
@@ -453,19 +467,66 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                   </div>
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="holo_image_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holographic Variant URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://..." {...field} className="bg-background/50 font-mono text-[10px]" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Holographic Artwork Section */}
+                <div className="space-y-4 pt-6 border-t border-border/40">
+                  <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground block mb-2 flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-primary" />
+                    Prismatic Variant Artwork
+                  </FormLabel>
+                  <div className="flex flex-col md:flex-row gap-6 items-start">
+                    <div className="relative w-full md:w-40 aspect-[3/4] bg-primary/5 rounded-lg border border-primary/20 flex items-center justify-center overflow-hidden group">
+                      {currentHoloImageUrl ? (
+                        <img src={currentHoloImageUrl} alt="Holo Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-primary/20">
+                          <Sparkles className="w-8 h-8" />
+                          <span className="text-[10px] font-headline uppercase tracking-tighter">No Holo</span>
+                        </div>
+                      )}
+                      {isHoloUploading && (
+                        <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                          <span className="text-[10px] font-headline uppercase tracking-widest animate-pulse">Prismatic Shift</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 space-y-4 w-full">
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          disabled={isUploading || isHoloUploading || !cardId}
+                          onClick={() => holoFileInputRef.current?.click()}
+                          className="w-full md:w-auto font-headline text-[10px] uppercase tracking-[0.2em] border-primary/40 hover:bg-primary/20 h-10"
+                        >
+                          {isHoloUploading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                          {currentHoloImageUrl ? "Update Prismatic Art" : "Select Prismatic Art"}
+                        </Button>
+                        <input 
+                          type="file" 
+                          ref={holoFileInputRef} 
+                          className="hidden" 
+                          accept="image/png,image/jpeg,image/webp" 
+                          onChange={(e) => handleImageUpload(e, 'holo')}
+                        />
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="holo_image_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Holographic URL Fallback</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://..." {...field} className="bg-background/50 font-mono text-[10px]" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -603,7 +664,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
             </Card>
 
             <div className="flex flex-col gap-3">
-              <Button type="submit" disabled={isSubmitting || isUploading} className="w-full font-headline font-bold uppercase tracking-widest py-6">
+              <Button type="submit" disabled={isSubmitting || isUploading || isHoloUploading} className="w-full font-headline font-bold uppercase tracking-widest py-6">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
