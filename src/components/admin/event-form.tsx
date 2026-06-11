@@ -17,7 +17,7 @@ import {
   Gift,
   Palette,
   Bell,
-  CheckCircle2
+  ScrollText
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import Link from 'next/link';
 
 const REWARD_TYPES = ["none", "card", "cowry", "title", "badge"];
 
@@ -146,7 +147,6 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
     setError(null);
 
     try {
-      // Convert dates back to ISO strings for Supabase
       const payload = {
         ...data,
         start_date: data.start_date.toISOString(),
@@ -189,6 +189,17 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
               {error.message || "The chronicle update was rejected by the registry."}
             </AlertDescription>
           </Alert>
+        )}
+
+        {isEdit && (
+          <div className="flex justify-end">
+            <Button variant="outline" asChild className="border-primary/40 hover:bg-primary/10 text-primary font-headline text-xs uppercase tracking-widest">
+              <Link href={`/admin/events/${eventId}/cards`}>
+                <ScrollText className="w-4 h-4 mr-2" />
+                Manage Event Cards
+              </Link>
+            </Button>
+          </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

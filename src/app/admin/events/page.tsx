@@ -13,7 +13,7 @@ import {
   EyeOff,
   Bell,
   BellOff,
-  Gift
+  ScrollText
 } from 'lucide-react';
 import { 
   Table, 
@@ -187,12 +187,20 @@ export default function EventsListPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild className="opacity-0 group-hover:opacity-100 transition-opacity h-8 px-2 hover:bg-primary hover:text-primary-foreground">
-                      <Link href={`/admin/events/${event.id}/edit`}>
-                        <Edit2 className="w-3.5 h-3.5 mr-1.5" />
-                        Edit
-                      </Link>
-                    </Button>
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="sm" asChild className="h-8 px-2 hover:bg-primary/20 text-primary">
+                        <Link href={`/admin/events/${event.id}/cards`}>
+                          <ScrollText className="w-3.5 h-3.5 mr-1.5" />
+                          Cards
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild className="h-8 px-2 hover:bg-primary hover:text-primary-foreground">
+                        <Link href={`/admin/events/${event.id}/edit`}>
+                          <Edit2 className="w-3.5 h-3.5 mr-1.5" />
+                          Edit
+                        </Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
