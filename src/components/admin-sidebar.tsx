@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -34,14 +35,14 @@ import { AdminRole } from "@/hooks/useRole";
 
 const menuItems = [
   { title: "Dashboard", icon: Home, url: "/admin/dashboard" },
-  { title: "Archives", icon: ScrollText, url: "/admin/archives" },
+  { title: "Registry", icon: ScrollText, url: "/admin/cards" },
   { title: "Chronicles", icon: Calendar, url: "/admin/chronicles" },
   { title: "Protagonists", icon: Users, url: "/admin/protagonists" },
   { title: "Relics", icon: Sword, url: "/admin/relics" },
 ];
 
 const metaItems = [
-  { title: "Registry", icon: Shield, url: "/admin/registry" },
+  { title: "Archive Status", icon: Shield, url: "/admin/registry" },
   { title: "Settings", icon: Settings, url: "/admin/settings" },
 ];
 
