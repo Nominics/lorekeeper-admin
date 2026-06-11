@@ -40,7 +40,7 @@ const menuItems = [
   { title: "Registry", icon: ScrollText, url: "/admin/cards" },
   { title: "Chronicles", icon: Calendar, url: "/admin/events" },
   { title: "Atolls", icon: Map, url: "/admin/atolls" },
-  { title: "Protagonists", icon: Users, url: "/admin/protagonists" },
+  { title: "Protagonists", icon: Users, url: "/admin/players" },
   { title: "Relics", icon: Sword, url: "/admin/relics" },
 ];
 
