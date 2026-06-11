@@ -8,8 +8,7 @@ import {
   Loader2, 
   AlertCircle, 
   Save,
-  Settings2,
-  ChevronRight
+  Settings2
 } from 'lucide-react';
 import { 
   Table, 
