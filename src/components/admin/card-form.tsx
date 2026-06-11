@@ -78,10 +78,17 @@ interface CardFormProps {
   isEdit?: boolean;
 }
 
+interface ArchivalError {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
 export function CardForm({ initialData, isEdit }: CardFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ArchivalError | null>(null);
 
   const form = useForm<CardFormValues>({
     resolver: zodResolver(cardSchema),
@@ -112,8 +119,6 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
   useEffect(() => {
     if (selectedRarity && RARITY_PRESETS[selectedRarity]) {
       const preset = RARITY_PRESETS[selectedRarity];
-      // Only update if current values are default or zero to avoid overwriting intentional manual tweaks
-      // In a real app, you might want to ask or only do this on "New" mode.
       const currentPower = form.getValues('base_power');
       const currentHolo = form.getValues('holo_chance');
       
@@ -146,7 +151,12 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
       router.refresh();
     } catch (err: any) {
       console.error('Error saving card:', err);
-      setError(err.message || 'The archive rejected the update. Please verify all data nodes.');
+      setError({
+        message: err.message || 'The archive rejected the update.',
+        code: err.code,
+        details: err.details,
+        hint: err.hint,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -158,9 +168,24 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
         {error && (
           <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle className="font-headline font-bold uppercase tracking-wider text-xs">Transmission Error</AlertTitle>
-            <AlertDescription className="font-body text-xs italic">
-              {error}
+            <AlertTitle className="font-headline font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+              Transmission Error
+              {error.code && <span className="font-mono text-[9px] bg-destructive/20 px-1.5 py-0.5 rounded text-destructive leading-none">Code: {error.code}</span>}
+            </AlertTitle>
+            <AlertDescription className="font-body text-xs mt-2 space-y-2">
+              <p className="font-bold italic">{error.message}</p>
+              {error.details && (
+                <div className="pt-1 border-t border-destructive/20 mt-1">
+                  <span className="uppercase text-[9px] tracking-widest opacity-70 block mb-0.5">Details:</span>
+                  <p className="opacity-90">{error.details}</p>
+                </div>
+              )}
+              {error.hint && (
+                <div className="pt-1 border-t border-destructive/20">
+                  <span className="uppercase text-[9px] tracking-widest opacity-70 block mb-0.5">Hint:</span>
+                  <p className="opacity-90 font-mono text-[10px]">{error.hint}</p>
+                </div>
+              )}
             </AlertDescription>
           </Alert>
         )}
