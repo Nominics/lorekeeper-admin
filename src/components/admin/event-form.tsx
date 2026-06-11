@@ -17,7 +17,6 @@ import {
   Palette,
   Bell,
   ScrollText,
-  Map
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -81,6 +80,7 @@ interface EventFormProps {
 }
 
 interface Atoll {
+  id: string;
   code: string;
   admin_name: string;
 }
@@ -118,7 +118,7 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
         setAtollsLoading(true);
         const { data, error: fetchError } = await supabase
           .from('atolls')
-          .select('code, admin_name')
+          .select('id, code, admin_name')
           .eq('enabled', true)
           .order('display_order', { ascending: true });
 
@@ -301,7 +301,7 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
                           <SelectContent>
                             <SelectItem value="null">Universal Event</SelectItem>
                             {atolls.map(a => (
-                              <SelectItem key={a.code} value={a.code}>{a.admin_name}</SelectItem>
+                              <SelectItem key={a.id} value={a.code}>{a.admin_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

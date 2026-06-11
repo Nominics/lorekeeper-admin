@@ -16,7 +16,6 @@ import {
   Zap,
   Upload,
   Image as ImageIcon,
-  CheckCircle2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -88,6 +87,7 @@ interface ArchivalError {
 }
 
 interface Atoll {
+  id: string;
   code: string;
   admin_name: string;
 }
@@ -139,7 +139,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
         setAtollsLoading(true);
         const { data, error: fetchError } = await supabase
           .from('atolls')
-          .select('code, admin_name')
+          .select('id, code, admin_name')
           .eq('enabled', true)
           .order('display_order', { ascending: true });
 
@@ -384,7 +384,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                           </FormControl>
                           <SelectContent>
                             {atolls.map(a => (
-                              <SelectItem key={a.code} value={a.code}>
+                              <SelectItem key={a.id} value={a.code}>
                                 <span className="font-mono mr-2">{a.code}</span> — {a.admin_name}
                               </SelectItem>
                             ))}
