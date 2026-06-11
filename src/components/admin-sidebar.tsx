@@ -32,6 +32,7 @@ import { supabase } from "@/lib/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { AdminRole } from "@/hooks/useRole";
+import Link from "next/link";
 
 const menuItems = [
   { title: "Dashboard", icon: Home, url: "/admin/dashboard" },
@@ -103,11 +104,11 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
                     tooltip={item.title}
                     className="hover:bg-primary/5 transition-all group"
                   >
-                    <a href={item.url} className="flex items-center gap-3 py-6">
+                    <Link href={item.url} className="flex items-center gap-3 py-6">
                       <item.icon className={`w-5 h-5 ${pathname.startsWith(item.url) ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} strokeWidth={1.5} />
                       <span className="font-body text-sm">{item.title}</span>
                       {pathname.startsWith(item.url) && <ChevronRight className="ml-auto w-3 h-3 text-primary" />}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -128,10 +129,10 @@ export function AdminSidebar({ role }: AdminSidebarProps) {
                   tooltip={item.title}
                   className="hover:bg-primary/5 transition-all"
                 >
-                  <a href={item.url} className="flex items-center gap-3 py-6">
+                  <Link href={item.url} className="flex items-center gap-3 py-6">
                     <item.icon className={`w-5 h-5 ${pathname === item.url ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} strokeWidth={1.5} />
                     <span className="font-body text-sm">{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
