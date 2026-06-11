@@ -12,7 +12,8 @@ import {
   Sword, 
   ScrollText,
   Home,
-  ChevronRight
+  ChevronRight,
+  Map
 } from "lucide-react";
 import {
   Sidebar,
@@ -38,6 +39,7 @@ const menuItems = [
   { title: "Dashboard", icon: Home, url: "/admin/dashboard" },
   { title: "Registry", icon: ScrollText, url: "/admin/cards" },
   { title: "Chronicles", icon: Calendar, url: "/admin/events" },
+  { title: "Atolls", icon: Map, url: "/admin/atolls" },
   { title: "Protagonists", icon: Users, url: "/admin/protagonists" },
   { title: "Relics", icon: Sword, url: "/admin/relics" },
 ];

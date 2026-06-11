@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +17,8 @@ import {
   Gift,
   Palette,
   Bell,
-  ScrollText
+  ScrollText,
+  Map
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ const eventSchema = z.object({
   title: z.string().min(2, "Title must be at least 2 characters"),
   description: z.string().optional(),
   banner_url: z.string().optional(),
+  atoll: z.string().optional(),
   start_date: z.date({
     required_error: "A start date is required.",
   }),
@@ -79,11 +81,18 @@ interface EventFormProps {
   isEdit?: boolean;
 }
 
+interface Atoll {
+  code: string;
+  name: string;
+}
+
 export function EventForm({ initialData, isEdit }: EventFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<any>(null);
+  const [atolls, setAtolls] = useState<Atoll[]>([]);
+  const [atollsLoading, setAtollsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EventFormValues>({
@@ -93,6 +102,7 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
       title: '',
       description: '',
       banner_url: '',
+      atoll: '',
       start_date: new Date(),
       end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week default
       is_active: true,
@@ -102,6 +112,27 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
       ...initialData,
     },
   });
+
+  useEffect(() => {
+    async function fetchAtolls() {
+      try {
+        setAtollsLoading(true);
+        const { data, error: fetchError } = await supabase
+          .from('atolls')
+          .select('code, name')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (fetchError) throw fetchError;
+        setAtolls(data || []);
+      } catch (err: any) {
+        console.error('Failed to load atolls:', err);
+      } finally {
+        setAtollsLoading(false);
+      }
+    }
+    fetchAtolls();
+  }, []);
 
   const eventId = form.watch('id');
   const currentBannerUrl = form.watch('banner_url');
@@ -255,7 +286,30 @@ export function EventForm({ initialData, isEdit }: EventFormProps) {
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="atoll"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Atoll Region</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={atollsLoading}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background/50">
+                              <SelectValue placeholder={atollsLoading ? "Loading..." : "Select Region (Optional)"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="null">Universal Event</SelectItem>
+                            {atolls.map(a => (
+                              <SelectItem key={a.code} value={a.code}>{a.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="start_date"

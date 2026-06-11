@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -52,7 +53,6 @@ const RARITY_PRESETS: Record<string, { power: number; holo: number }> = {
 
 const CLASSES = ["Person", "Beast", "Fable", "Lore", "Relic", "Location"];
 const RARITIES = ["Common", "Rare", "Epic", "Legendary"];
-const ATOLLS = ["HA", "HDh", "Sh", "N", "R", "B", "Lh", "K", "AA", "ADh", "V", "M", "F", "Dh", "Th", "L", "GA", "GDh", "Gn", "S", "GA/GDh"];
 const SOURCE_TAGS = ["Registration Card", "Nearby Waters", "Reef Expedition", "Ancient Waters", "Forgotten Voyage", "Atoll Expedition", "Event Only"];
 
 const cardSchema = z.object({
@@ -88,12 +88,19 @@ interface ArchivalError {
   hint?: string;
 }
 
+interface Atoll {
+  code: string;
+  name: string;
+}
+
 export function CardForm({ initialData, isEdit }: CardFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isHoloUploading, setIsHoloUploading] = useState(false);
   const [error, setError] = useState<ArchivalError | null>(null);
+  const [atolls, setAtolls] = useState<Atoll[]>([]);
+  const [atollsLoading, setAtollsLoading] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const holoFileInputRef = useRef<HTMLInputElement>(null);
@@ -105,7 +112,7 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
       card_name: '',
       class: 'Person',
       rarity: 'Common',
-      atoll: 'HA',
+      atoll: '',
       set_name: 'Core Set',
       description: '',
       full_lore: '',
@@ -125,6 +132,33 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
   const cardId = form.watch('id');
   const currentImageUrl = form.watch('image_url');
   const currentHoloImageUrl = form.watch('holo_image_url');
+
+  // Fetch Atolls
+  useEffect(() => {
+    async function fetchAtolls() {
+      try {
+        setAtollsLoading(true);
+        const { data, error: fetchError } = await supabase
+          .from('atolls')
+          .select('code, name')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (fetchError) throw fetchError;
+        setAtolls(data || []);
+        
+        // If first load and no atoll set, pick first active
+        if (!form.getValues('atoll') && data && data.length > 0) {
+          form.setValue('atoll', data[0].code);
+        }
+      } catch (err: any) {
+        console.error('Failed to load atolls:', err);
+      } finally {
+        setAtollsLoading(false);
+      }
+    }
+    fetchAtolls();
+  }, [form]);
 
   // Auto-fill logic based on rarity
   useEffect(() => {
@@ -157,7 +191,8 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${type}/${cardId}.${fileExt}`;
+      const folder = type === 'normal' ? 'normal' : 'holo';
+      const fileName = `${folder}/${cardId}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('card-art')
@@ -342,14 +377,18 @@ export function CardForm({ initialData, isEdit }: CardFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-headline text-[10px] uppercase tracking-widest text-muted-foreground">Origin Atoll</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={atollsLoading}>
                           <FormControl>
                             <SelectTrigger className="bg-background/50">
-                              <SelectValue placeholder="Select Atoll" />
+                              <SelectValue placeholder={atollsLoading ? "Loading Atolls..." : "Select Atoll"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {ATOLLS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                            {atolls.map(a => (
+                              <SelectItem key={a.code} value={a.code}>
+                                <span className="font-mono mr-2">{a.code}</span> — {a.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
