@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,7 +14,8 @@ import {
   Home,
   ChevronRight,
   Map,
-  Compass
+  Compass,
+  Ship
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +42,7 @@ const menuItems = [
   { title: "Registry", icon: ScrollText, url: "/admin/cards" },
   { title: "Chronicles", icon: Calendar, url: "/admin/events" },
   { title: "Exploration Rules", icon: Compass, url: "/admin/expedition-rules" },
+  { title: "Boat Upgrades", icon: Ship, url: "/admin/boat-upgrades" },
   { title: "Atolls", icon: Map, url: "/admin/atolls" },
   { title: "Protagonists", icon: Users, url: "/admin/players" },
   { title: "Relics", icon: Sword, url: "/admin/relics" },
